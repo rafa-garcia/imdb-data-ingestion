@@ -3,6 +3,7 @@
 
 -- Create base schemas
 CREATE SCHEMA IF NOT EXISTS "name";
+CREATE SCHEMA IF NOT EXISTS "title";
 
 -- Performance settings for bulk operations
 SET maintenance_work_mem = '1GB';
@@ -22,4 +23,23 @@ CREATE TABLE "name"."basics" (
     "deathYear" integer,
     "primaryProfession" text,
     "knownForTitles" text
+);
+
+-- =============================================================================
+-- TITLE TABLES
+-- =============================================================================
+-- Drop title tables in correct order
+DROP TABLE IF EXISTS "title"."basics" CASCADE;
+
+-- Main table for title basics
+CREATE TABLE "title"."basics" (
+    "tconst" text PRIMARY KEY,
+    "titleType" text,
+    "primaryTitle" text,
+    "originalTitle" text,
+    "isAdult" integer,
+    "startYear" integer,
+    "endYear" integer,
+    "runtimeMinutes" integer,
+    "genres" text
 );

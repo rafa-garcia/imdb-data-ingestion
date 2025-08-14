@@ -60,7 +60,10 @@ tasks:
       - |
         source "{{.SCRIPTS_DIR}}/functions.sh"
         printf "Database:\n"
-        psql -t -c "SELECT get_database_status('$NAME_BASICS_TABLE');" | grep -v "^$"
+        for dataset in $(get_all_datasets); do
+          read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset")"
+          psql -t -c "SELECT get_database_status('$schema', '$table', '$dataset');" | grep -v "^$"
+        done
         printf "\nETag status:\n"
         show_cache
         printf "\nPerformance Metrics:\n"

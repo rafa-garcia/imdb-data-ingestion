@@ -24,8 +24,9 @@ task status
 ## Commands
 
 - `task setup` - Create database tables
-- `task ingest` - Download and load data (skips if unchanged)
-- `task status` - Show database status and sizes
+- `task ingest` - Download and load all datasets (skips if unchanged)
+- `task ingest -- dataset_name` - Process specific dataset (e.g., `name_basics` or `title_basics`)
+- `task status` - Show database status and sizes for all datasets
 - `task clean` - Clear cache to force re-download
 - `task backup` - Backup the database
 - `task shell` - Open PostgreSQL shell
@@ -38,16 +39,30 @@ The ETag caching means once you've downloaded a dataset, it won't re-download un
 
 ## Data format
 
-Tables match the IMDB format. For example, `name.basics`:
+Tables match the IMDB format exactly. Examples:
 
 ```sql
+-- Names data (name.basics)
 CREATE TABLE name.basics (
-    nconst text PRIMARY KEY,
-    primaryName text,
-    birthYear integer,
-    deathYear integer,
-    primaryProfession text,  -- "actor,producer,director"
-    knownForTitles text      -- "tt1234567,tt7654321"
+    nconst text PRIMARY KEY,        -- "nm0000001"
+    primaryName text,               -- "Fred Astaire"
+    birthYear integer,              -- 1899
+    deathYear integer,              -- 1987
+    primaryProfession text,         -- "actor,miscellaneous,producer"
+    knownForTitles text            -- "tt0053137,tt0072308,tt0031983"
+);
+
+-- Titles data (title.basics)
+CREATE TABLE title.basics (
+    tconst text PRIMARY KEY,       -- "tt0000001"
+    titleType text,                -- "short"
+    primaryTitle text,             -- "Carmencita"
+    originalTitle text,            -- "Carmencita"
+    isAdult integer,               -- 0
+    startYear integer,             -- 1894
+    endYear integer,               -- NULL
+    runtimeMinutes integer,        -- 1
+    genres text                    -- "Documentary,Short"
 );
 ```
 

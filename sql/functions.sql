@@ -35,11 +35,24 @@ BEGIN
 
     row_count := get_row_count(schema_name, table_name);
 
-    -- Restore primary key constraint
-    EXECUTE format(
-        'ALTER TABLE %s ADD CONSTRAINT %s_pkey PRIMARY KEY (nconst)',
-        full_table_name, table_name
-    );
+    -- Restore primary key constraint with appropriate column
+    DECLARE
+        pk_column text;
+    BEGIN
+        -- Determine primary key column based on schema
+        IF schema_name = 'name' THEN
+            pk_column := 'nconst';
+        ELSIF schema_name = 'title' THEN
+            pk_column := 'tconst';
+        ELSE
+            RAISE EXCEPTION 'Unknown schema: %', schema_name;
+        END IF;
+
+        EXECUTE format(
+            'ALTER TABLE %s ADD CONSTRAINT %s_pkey PRIMARY KEY (%s)',
+            full_table_name, table_name, pk_column
+        );
+    END;
 
     -- Return success message
     RETURN 'SUCCESS: Loaded ' || row_count || ' records';
@@ -52,13 +65,15 @@ $$ LANGUAGE plpgsql;
 
 -- Function to get database status information
 CREATE OR REPLACE FUNCTION get_database_status (
-    table_name text
+    schema_name text,
+    table_name text,
+    dataset_name text
 ) RETURNS TABLE (status_line text) AS $$
 BEGIN
     RETURN QUERY
     SELECT
-        '   ' || table_name || ' (' ||
-        get_row_count('name', table_name) || ' rows)' AS status_line;
+        '   ' || dataset_name || ' (' ||
+        get_row_count(schema_name, table_name) || ' rows)' AS status_line;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -106,7 +121,7 @@ BEGIN
     LOOP
         result := result || E'\n  ' || rec.schemaname || '.' || rec.tablename || ': ' || rec.size;
     END LOOP;
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql;

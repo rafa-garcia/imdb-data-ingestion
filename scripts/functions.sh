@@ -1,6 +1,6 @@
 #!/bin/bash
 
-AVAILABLE_DATASETS=("name_basics")
+AVAILABLE_DATASETS=("name_basics" "title_basics")
 
 get_all_datasets() {
     printf "%s" "${AVAILABLE_DATASETS[*]}"
@@ -11,6 +11,9 @@ get_dataset_config() {
     case "$dataset" in
         "name_basics")
             printf "%s %s %s %s" "$NAME_BASICS_URL" "$NAME_BASICS_TABLE" "$NAME_BASICS_SCHEMA" "$NAME_BASICS_ETAG_FILE"
+            ;;
+        "title_basics")
+            printf "%s %s %s %s" "$TITLE_BASICS_URL" "$TITLE_BASICS_TABLE" "$TITLE_BASICS_SCHEMA" "$TITLE_BASICS_ETAG_FILE"
             ;;
         *)
             printf "Error: Unknown dataset '%s'\n" "$dataset" >&2
@@ -24,17 +27,17 @@ ingest_single_dataset() {
     local dataset_name="$1"
     local url table schema etag_file_name
     read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset_name")"
-    
+
     mkdir -p "$CACHE_DIR"
     local etag_file="$CACHE_DIR/$etag_file_name"
     local start_time
     start_time=$(date +%s)
-    
+
     # Pipeline display and processing
     show_streaming_progress "$dataset_name" "$url"
     show_database_prep "$dataset_name"
     show_ingestion_with_progress "$dataset_name" "$schema" "$table" "$url" "$etag_file"
-    
+
     # Show completion
     local final_count
     final_count=$(psql -t -A -c "SELECT get_row_count('$schema', '$table');")
@@ -68,7 +71,7 @@ show_ingestion_with_progress() {
   local term_width
   term_width=$(tput cols)
   local bar_width=$((term_width - 8)) # Account for " 100.0%"
-  
+
   while kill -0 $psql_pid 2> /dev/null; do
     local elapsed=$(($(date +%s) - start_time))
     local progress=$((elapsed * 90 / 15)) # 90% over 15 seconds
@@ -84,7 +87,7 @@ show_ingestion_with_progress() {
   wait $psql_pid
   local exit_code=$?
   printf "\r%${bar_width}s 100.0%%\n" | tr ' ' '#'
-  
+
   # Create timestamp file on successful completion
   if [ $exit_code -eq 0 ]; then
     local timestamp_file="${etag_file%.etag}.timestamp"
@@ -105,7 +108,7 @@ show_cache() {
         local url table schema etag_file_name
         read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset")"
         local etag_file="$CACHE_DIR/$etag_file_name"
-        
+
         if [ -f "$etag_file" ]; then
             local etag
             etag=$(cat "$etag_file")
@@ -139,12 +142,12 @@ ingest_datasets() {
 
 check_cache() {
     local needs_update=false
-    
+
     for dataset in $(get_all_datasets); do
         local url table schema etag_file_name
         read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset")"
         local etag_file="$CACHE_DIR/$etag_file_name"
-        
+
         if [ -f "$etag_file" ]; then
             local http_code
             http_code=$(curl -s -w "%{http_code}" -o /dev/null --head --etag-compare "$etag_file" "$url")
@@ -159,7 +162,7 @@ check_cache() {
             needs_update=true
         fi
     done
-    
+
     [ "$needs_update" = "false" ] && { printf "✓ All datasets are up to date, skipping ingestion\n"; return 0; } || return 1
 }
 
@@ -167,26 +170,34 @@ show_stats() {
     for dataset in $(get_all_datasets); do
         local url table schema etag_file_name
         read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset")"
-        
+
         local count
         count=$(psql -t -A -c "SELECT get_row_count('$schema', '$table');")
         printf "Record count for %s: %s\n" "$dataset" "$count"
-        
+
         [ "$count" -lt 1000000 ] && printf "Warning: %s record count seems low\n" "$dataset"
     done
 }
 
 check_setup() {
     local needs_setup=false
-    
+
     # Check if tables exist
+    local tables_missing=false
     if ! psql -t -c "SELECT to_regclass('name.basics');" | grep -q "basics"; then
+        tables_missing=true
+    fi
+    if ! psql -t -c "SELECT to_regclass('title.basics');" | grep -q "basics"; then
+        tables_missing=true
+    fi
+
+    if [ "$tables_missing" = "true" ]; then
         printf "→ Database tables need to be created\n"
         needs_setup=true
     else
         printf "✓ Database tables exist\n"
     fi
-    
+
     # Check if functions exist
     if ! psql -t -c "SELECT count(*) FROM pg_proc WHERE proname='bulk_load';" | grep -q "1"; then
         printf "→ Database functions need to be installed\n"
@@ -194,7 +205,7 @@ check_setup() {
     else
         printf "✓ Database functions installed\n"
     fi
-    
+
     # Check if scripts are executable
     if ! test -x "scripts/ingest.sh"; then
         printf "→ Script permissions need to be set\n"
@@ -202,7 +213,7 @@ check_setup() {
     else
         printf "✓ Script permissions set\n"
     fi
-    
+
     if [ "$needs_setup" = "false" ]; then
         printf "✓ Database environment is already set up\n"
         return 1  # no setup needed
