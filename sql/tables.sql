@@ -30,6 +30,7 @@ CREATE TABLE "name"."basics" (
 -- =============================================================================
 -- Drop title tables in correct order
 DROP TABLE IF EXISTS "title"."basics" CASCADE;
+DROP TABLE IF EXISTS "title"."akas" CASCADE;
 
 -- Main table for title basics
 CREATE TABLE "title"."basics" (
@@ -42,4 +43,17 @@ CREATE TABLE "title"."basics" (
     "endYear" integer,
     "runtimeMinutes" integer,
     "genres" text
+);
+
+-- Main table for title akas
+CREATE TABLE "title"."akas" (
+    "titleId" text,
+    "ordering" integer,
+    "title" text,
+    "region" text,
+    "language" text,
+    "types" text,
+    "attributes" text,
+    "isOriginalTitle" integer,
+    PRIMARY KEY ("titleId", "ordering")
 );

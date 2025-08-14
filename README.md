@@ -64,6 +64,19 @@ CREATE TABLE title.basics (
     runtimeMinutes integer,        -- 1
     genres text                    -- "Documentary,Short"
 );
+
+-- Alternative titles (title.akas)
+CREATE TABLE title.akas (
+    titleId text,                  -- "tt0000001"
+    ordering integer,              -- 1
+    title text,                    -- "Carmencita - spanyol tánc"
+    region text,                   -- "HU"
+    language text,                 -- "\\N"
+    types text,                    -- "imdbDisplay"
+    attributes text,               -- "\\N"
+    isOriginalTitle integer,       -- 0
+    PRIMARY KEY (titleId, ordering)
+);
 ```
 
 Text fields with comma-separated values are stored as-is. You'll need to split them in your queries if you want individual values.

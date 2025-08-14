@@ -1,6 +1,6 @@
 #!/bin/bash
 
-AVAILABLE_DATASETS=("name_basics" "title_basics")
+AVAILABLE_DATASETS=("name_basics" "title_basics" "title_akas")
 
 get_all_datasets() {
     printf "%s" "${AVAILABLE_DATASETS[*]}"
@@ -14,6 +14,9 @@ get_dataset_config() {
             ;;
         "title_basics")
             printf "%s %s %s %s" "$TITLE_BASICS_URL" "$TITLE_BASICS_TABLE" "$TITLE_BASICS_SCHEMA" "$TITLE_BASICS_ETAG_FILE"
+            ;;
+        "title_akas")
+            printf "%s %s %s %s" "$TITLE_AKAS_URL" "$TITLE_AKAS_TABLE" "$TITLE_AKAS_SCHEMA" "$TITLE_AKAS_ETAG_FILE"
             ;;
         *)
             printf "Error: Unknown dataset '%s'\n" "$dataset" >&2
@@ -188,6 +191,9 @@ check_setup() {
         tables_missing=true
     fi
     if ! psql -t -c "SELECT to_regclass('title.basics');" | grep -q "basics"; then
+        tables_missing=true
+    fi
+    if ! psql -t -c "SELECT to_regclass('title.akas');" | grep -q "akas"; then
         tables_missing=true
     fi
 

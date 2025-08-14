@@ -35,22 +35,24 @@ BEGIN
 
     row_count := get_row_count(schema_name, table_name);
 
-    -- Restore primary key constraint with appropriate column
+    -- Restore primary key constraint with appropriate column(s)
     DECLARE
-        pk_column text;
+        pk_constraint text;
     BEGIN
-        -- Determine primary key column based on schema
+        -- Determine primary key constraint based on schema and table
         IF schema_name = 'name' THEN
-            pk_column := 'nconst';
-        ELSIF schema_name = 'title' THEN
-            pk_column := 'tconst';
+            pk_constraint := '"nconst"';
+        ELSIF schema_name = 'title' AND table_name = 'basics' THEN
+            pk_constraint := '"tconst"';
+        ELSIF schema_name = 'title' AND table_name = 'akas' THEN
+            pk_constraint := '"titleId", "ordering"';
         ELSE
-            RAISE EXCEPTION 'Unknown schema: %', schema_name;
+            RAISE EXCEPTION 'Unknown schema.table: %.%', schema_name, table_name;
         END IF;
 
         EXECUTE format(
             'ALTER TABLE %s ADD CONSTRAINT %s_pkey PRIMARY KEY (%s)',
-            full_table_name, table_name, pk_column
+            full_table_name, table_name, pk_constraint
         );
     END;
 
