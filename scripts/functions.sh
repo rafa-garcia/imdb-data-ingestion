@@ -80,28 +80,9 @@ show_ingestion_with_progress() {
   psql -c "SELECT bulk_load('$schema', '$table', '$url', '/$etag_file');" > /dev/null &
   local psql_pid=$!
 
-  # Simple progress animation
-  local start_time
-  start_time=$(date +%s)
-  local term_width
-  term_width=$(tput cols)
-  local bar_width=$((term_width - 8)) # Account for " 100.0%"
-
-  while kill -0 $psql_pid 2> /dev/null; do
-    local elapsed=$(($(date +%s) - start_time))
-    local progress=$((elapsed * 90 / 15)) # 90% over 15 seconds
-    [ $progress -gt 90 ] && progress=90
-
-    local filled=$((bar_width * progress / 100))
-    printf "\r"
-    printf "%${filled}s" | tr ' ' '#'
-    printf "%$((bar_width - filled))s %3d.0%%" "" "$progress"
-  done
-
-  # Wait for completion and show 100%
+  # Wait for completion
   wait $psql_pid
   local exit_code=$?
-  printf "\r%${bar_width}s 100.0%%\n" | tr ' ' '#'
 
   # Create timestamp file on successful completion
   if [ $exit_code -eq 0 ]; then
