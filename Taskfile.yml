@@ -1,0 +1,122 @@
+version: '3'
+
+# Streamlined IMDB ETL Pipeline
+
+dotenv: ['.env']
+
+vars:
+  SCRIPTS_DIR: ./scripts
+  SQL_DIR: ./sql
+  CACHE_DIR: .cache/etags
+  PRINT_STEP: 'printf "==> \e[1m%s\e[0m\n"'
+
+tasks:
+  # Default task
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+
+  # === CORE WORKFLOW ===
+  setup:
+    desc: "Initialize database environment"
+    silent: true
+    status:
+      - sh -c 'source "{{.SCRIPTS_DIR}}/functions.sh"; check_setup'
+    cmds:
+      - '{{.PRINT_STEP}} "Setting up database environment"'
+      - psql -f {{.SQL_DIR}}/tables.sql
+      - psql -f {{.SQL_DIR}}/functions.sql
+      - chmod +x {{.SCRIPTS_DIR}}/*.sh
+      - printf "✓ Database environment ready\n"
+
+  ingest:
+    desc: "Ingest IMDB datasets"
+    silent: true
+    deps: [setup]
+    status:
+      - |
+        source "{{.SCRIPTS_DIR}}/functions.sh"
+        check_cache
+    cmds:
+      - |
+        {{.PRINT_STEP}} "Starting data ingestion"
+        source "{{.SCRIPTS_DIR}}/functions.sh"
+        ingest_datasets {{.CLI_ARGS}}
+      - printf "✓ Data ingestion completed\n"
+
+  ingest:force:
+    desc: "Force re-ingestion (bypass cache)"
+    silent: true
+    deps: [clean]
+    cmds:
+      - task: ingest
+
+  status:
+    desc: "Show system status and performance metrics"
+    silent: true
+    cmds:
+      - "{{.PRINT_STEP}} \"System Status Report\""
+      - |
+        source "{{.SCRIPTS_DIR}}/functions.sh"
+        printf "Database:\n"
+        psql -t -c "SELECT get_database_status('$NAME_BASICS_TABLE');" | grep -v "^$"
+        printf "\nETag status:\n"
+        show_cache
+        printf "\nPerformance Metrics:\n"
+        psql -t -c "SELECT get_database_size();" | grep -v "^$"
+        psql -t -c "SELECT get_table_sizes();" | grep -v "^$"
+
+  validate:
+    desc: "Validate database setup and data quality"
+    silent: true
+    preconditions:
+      - sh: psql -t -c "SELECT EXISTS(SELECT 1 FROM name.basics LIMIT 1);" | grep -q "t"
+        msg: "No data found. Run 'task ingest' first."
+    cmds:
+      - '{{.PRINT_STEP}} "Validating database"'
+      - psql -c "SELECT version();" > /dev/null
+      - |
+        source "{{.SCRIPTS_DIR}}/functions.sh"
+        show_stats
+      - printf "✓ Validation completed\n"
+
+  maintenance:
+    desc: "Run database maintenance (vacuum + analyze)"
+    silent: true
+    status:
+      - psql -t -c "SELECT last_vacuum > NOW() - INTERVAL '1 day' FROM pg_stat_user_tables WHERE relname = 'basics'" | grep -q "t"
+    cmds:
+      - '{{.PRINT_STEP}} "Running database maintenance"'
+      - psql -c "VACUUM ANALYZE;"
+      - printf "✓ Maintenance completed\n"
+
+  clean:
+    desc: "Clean ETag cache"
+    silent: true
+    status:
+      - test ! -d "{{.CACHE_DIR}}" || test -z "$(ls -A {{.CACHE_DIR}} 2>/dev/null)"
+    cmds:
+      - '{{.PRINT_STEP}} "Cleaning ETag cache"'
+      - rm -rf {{.CACHE_DIR}}/*
+      - printf "✓ Cache cleaned\n"
+
+  # === UTILITIES ===
+  shell:
+    desc: "Connect to PostgreSQL shell"
+    silent: true
+    interactive: true
+    cmds:
+      - psql
+
+  backup:
+    desc: "Create database backup"
+    silent: true
+    status:
+      - test -f backup_$(date +%Y%m%d)*.sql
+    cmds:
+      - '{{.PRINT_STEP}} "Creating database backup"'
+      - |
+        BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
+        pg_dump > "$BACKUP_FILE"
+        printf "✓ Backup created: %s\n" "$BACKUP_FILE"

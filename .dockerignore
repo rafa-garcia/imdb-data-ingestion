@@ -1,0 +1,42 @@
+# Cache and temporary files
+.cache/
+*.etag
+*.timestamp
+
+# Environment files
+.env*
+!.env.sample
+
+# Downloaded data files
+*.tsv
+*.tsv.gz
+
+# Database files and backups
+*.log
+*.sql.bak
+*.dump
+*.backup
+backup_*.sql
+postgres_data/
+
+# Task runner files
+.task/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Documentation and config files not needed in container
+README.md
+Taskfile.yml
+scripts/
