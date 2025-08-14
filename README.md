@@ -77,6 +77,39 @@ CREATE TABLE title.akas (
     isOriginalTitle integer,       -- 0
     PRIMARY KEY (titleId, ordering)
 );
+
+-- Crew information (title.crew)
+CREATE TABLE title.crew (
+    tconst text PRIMARY KEY,      -- "tt0000001"
+    directors text,               -- "nm0005690"
+    writers text                  -- "\\N"
+);
+
+-- Episode information (title.episode)
+CREATE TABLE title.episode (
+    tconst text PRIMARY KEY,      -- "tt0041951"
+    parentTconst text,            -- "tt0041038"
+    seasonNumber integer,         -- 1
+    episodeNumber integer         -- 9
+);
+
+-- Principal cast and crew (title.principals)
+CREATE TABLE title.principals (
+    tconst text,                  -- "tt0000001"
+    ordering integer,             -- 1
+    nconst text,                  -- "nm1588970"
+    category text,                -- "self"
+    job text,                     -- "\\N"
+    characters text,              -- "\\N"
+    PRIMARY KEY (tconst, ordering)
+);
+
+-- Ratings information (title.ratings)
+CREATE TABLE title.ratings (
+    tconst text PRIMARY KEY,      -- "tt0000001"
+    averageRating real,           -- 5.7
+    numVotes integer              -- 2036
+);
 ```
 
 Text fields with comma-separated values are stored as-is. You'll need to split them in your queries if you want individual values.

@@ -46,6 +46,14 @@ BEGIN
             pk_constraint := '"tconst"';
         ELSIF schema_name = 'title' AND table_name = 'akas' THEN
             pk_constraint := '"titleId", "ordering"';
+        ELSIF schema_name = 'title' AND table_name = 'crew' THEN
+            pk_constraint := '"tconst"';
+        ELSIF schema_name = 'title' AND table_name = 'episode' THEN
+            pk_constraint := '"tconst"';
+        ELSIF schema_name = 'title' AND table_name = 'principals' THEN
+            pk_constraint := '"tconst", "ordering"';
+        ELSIF schema_name = 'title' AND table_name = 'ratings' THEN
+            pk_constraint := '"tconst"';
         ELSE
             RAISE EXCEPTION 'Unknown schema.table: %.%', schema_name, table_name;
         END IF;

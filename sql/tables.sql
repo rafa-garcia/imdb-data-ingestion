@@ -31,6 +31,10 @@ CREATE TABLE "name"."basics" (
 -- Drop title tables in correct order
 DROP TABLE IF EXISTS "title"."basics" CASCADE;
 DROP TABLE IF EXISTS "title"."akas" CASCADE;
+DROP TABLE IF EXISTS "title"."crew" CASCADE;
+DROP TABLE IF EXISTS "title"."episode" CASCADE;
+DROP TABLE IF EXISTS "title"."principals" CASCADE;
+DROP TABLE IF EXISTS "title"."ratings" CASCADE;
 
 -- Main table for title basics
 CREATE TABLE "title"."basics" (
@@ -56,4 +60,37 @@ CREATE TABLE "title"."akas" (
     "attributes" text,
     "isOriginalTitle" integer,
     PRIMARY KEY ("titleId", "ordering")
+);
+
+-- Main table for title crew
+CREATE TABLE "title"."crew" (
+    "tconst" text PRIMARY KEY,
+    "directors" text,
+    "writers" text
+);
+
+-- Main table for title episode
+CREATE TABLE "title"."episode" (
+    "tconst" text PRIMARY KEY,
+    "parentTconst" text,
+    "seasonNumber" integer,
+    "episodeNumber" integer
+);
+
+-- Main table for title principals
+CREATE TABLE "title"."principals" (
+    "tconst" text,
+    "ordering" integer,
+    "nconst" text,
+    "category" text,
+    "job" text,
+    "characters" text,
+    PRIMARY KEY ("tconst", "ordering")
+);
+
+-- Main table for title ratings
+CREATE TABLE "title"."ratings" (
+    "tconst" text PRIMARY KEY,
+    "averageRating" real,
+    "numVotes" integer
 );

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-AVAILABLE_DATASETS=("name_basics" "title_basics" "title_akas")
+AVAILABLE_DATASETS=("name_basics" "title_basics" "title_akas" "title_crew" "title_episode" "title_principals" "title_ratings")
 
 get_all_datasets() {
     printf "%s" "${AVAILABLE_DATASETS[*]}"
@@ -17,6 +17,18 @@ get_dataset_config() {
             ;;
         "title_akas")
             printf "%s %s %s %s" "$TITLE_AKAS_URL" "$TITLE_AKAS_TABLE" "$TITLE_AKAS_SCHEMA" "$TITLE_AKAS_ETAG_FILE"
+            ;;
+        "title_crew")
+            printf "%s %s %s %s" "$TITLE_CREW_URL" "$TITLE_CREW_TABLE" "$TITLE_CREW_SCHEMA" "$TITLE_CREW_ETAG_FILE"
+            ;;
+        "title_episode")
+            printf "%s %s %s %s" "$TITLE_EPISODE_URL" "$TITLE_EPISODE_TABLE" "$TITLE_EPISODE_SCHEMA" "$TITLE_EPISODE_ETAG_FILE"
+            ;;
+        "title_principals")
+            printf "%s %s %s %s" "$TITLE_PRINCIPALS_URL" "$TITLE_PRINCIPALS_TABLE" "$TITLE_PRINCIPALS_SCHEMA" "$TITLE_PRINCIPALS_ETAG_FILE"
+            ;;
+        "title_ratings")
+            printf "%s %s %s %s" "$TITLE_RATINGS_URL" "$TITLE_RATINGS_TABLE" "$TITLE_RATINGS_SCHEMA" "$TITLE_RATINGS_ETAG_FILE"
             ;;
         *)
             printf "Error: Unknown dataset '%s'\n" "$dataset" >&2
@@ -187,16 +199,15 @@ check_setup() {
 
     # Check if tables exist
     local tables_missing=false
-    if ! psql -t -c "SELECT to_regclass('name.basics');" | grep -q "basics"; then
-        tables_missing=true
-    fi
-    if ! psql -t -c "SELECT to_regclass('title.basics');" | grep -q "basics"; then
-        tables_missing=true
-    fi
-    if ! psql -t -c "SELECT to_regclass('title.akas');" | grep -q "akas"; then
-        tables_missing=true
-    fi
-
+    for dataset in $(get_all_datasets); do
+        local url table schema etag_file_name
+        read -r url table schema etag_file_name <<< "$(get_dataset_config "$dataset")"
+        if ! psql -t -c "SELECT to_regclass('$schema.$table');" | grep -q "$table"; then
+            tables_missing=true
+            break
+        fi
+    done
+    
     if [ "$tables_missing" = "true" ]; then
         printf "→ Database tables need to be created\n"
         needs_setup=true
